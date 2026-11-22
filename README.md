@@ -5,7 +5,6 @@ Watch 10 security cameras from 12 AM to 6 AM. When something changes, draw a red
 ## Run
 Open `index.html` in a browser. No build step or server is needed.
 
-## Add your images
 1. Put 20 images per room in `assets/cam01/` … `assets/cam10/`, named `01.jpg` … `20.jpg` (`.png`, `.jpeg` and `.webp` also work).
 2. Use 16:9 images (for example 1280×720).
 3. Open `editor.html`. For each anomaly image, drag from the anomaly's centre outward to circle it. Leave normal images without a circle.
