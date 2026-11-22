@@ -1,0 +1,33 @@
+{
+  "name": "gamejam2026",
+  "version": "1.0.0",
+  "description": "Game Jam 2026",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron electron/make-icon.js",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.gamejam2026.app",
+    "productName": "GameJam2026",
+    "icon": "build/icon.png",
+    "files": [
+      "electron/**",
+      "index.html",
+      "editor.html",
+      "css/**",
+      "js/**",
+      "lib/**",
+      "assets/**",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  }
+}

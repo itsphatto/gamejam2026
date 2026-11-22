@@ -6,7 +6,6 @@
   const W = 1280, H = 720;
   const $ = (id) => document.getElementById(id);
 
-  const screenEl = $('screen');
   const view = $('view'), vctx = view.getContext('2d');
   const draw = $('draw'), dctx = draw.getContext('2d');
   const sfx = window.GameAudio; // real sound files, see js/audio.js
@@ -173,9 +172,9 @@
     if (amp > 0) {
       const dx = (Math.random() * 2 - 1) * amp, dy = (Math.random() * 2 - 1) * amp;
       const rot = (Math.random() * 2 - 1) * amp * 0.05;
-      screenEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+      view.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
     } else {
-      screenEl.style.transform = '';
+      view.style.transform = '';
     }
     $('dangerTint').style.opacity = level === 0 ? 0 : level === 1 ? 0.35 : 0.9;
   }
@@ -186,7 +185,7 @@
     state.processing = false;
     cancelDrawing();
     $('processing').classList.add('hidden');
-    screenEl.style.transform = '';
+    view.style.transform = '';
     $('dangerTint').style.opacity = 0;
 
     const room = rooms[cs.index];
@@ -257,7 +256,7 @@
   draw.addEventListener('pointerdown', (ev) => {
     if (!state.running || state.paused || state.processing) return;
     if (state.t < state.lockUntil) {
-      toast(`ถูกล็อกการรายงาน อีก ${Math.ceil(state.lockUntil - state.t)} วินาที`, 'bad', 900);
+      toast(`ระบบยังล็อกอยู่… อีก ${Math.ceil(state.lockUntil - state.t)} วินาที มันยังจ้องคุณอยู่`, 'bad', 900);
       return;
     }
     draw.setPointerCapture(ev.pointerId);
@@ -273,11 +272,11 @@
 
   // Thai text for the lasso check results (lib/lasso.js reason codes)
   const LASSO_TH = {
-    short: 'วาดเป็นวงให้ครบ',
-    open: 'วาดวงให้ปิด — ปลายเส้นต้องบรรจบกัน',
-    too_big: 'วงใหญ่เกินไป — วงให้แม่นกว่านี้',
-    scribble: 'ห้ามขีดมั่ว — วาดเป็นวงกลม',
-    too_small: 'วงเล็กเกินไป',
+    short: 'วงไม่ครบ… มันยังหลุดออกไปได้',
+    open: 'วงยังไม่ปิด… อย่าเว้นช่องให้มันหนี',
+    too_big: 'วงกว้างเกินไป… คุณไม่เห็นมันจริง ๆ ใช่ไหม',
+    scribble: 'มือคุณสั่น… วาดเป็นวงให้ดี',
+    too_small: 'วงเล็กเกินไป… มันตัวใหญ่กว่านั้น',
   };
 
   function finishStroke() {
@@ -294,8 +293,11 @@
     const a = cs.active && !cs.reported && cs.active.anomaly;
     let hit = false;
     if (a) {
-      const ax = a.x * W, ay = a.y * H, ar = a.r * W;
-      hit = Math.hypot(ax - circ.cx, ay - circ.cy) <= Math.max(circ.r, ar); // one centre inside the other circle
+      // a.also = extra spots in the same image (e.g. two creatures); circling any one counts
+      hit = [a, ...(a.also || [])].some((s) => {
+        const ax = s.x * W, ay = s.y * H, ar = s.r * W;
+        return Math.hypot(ax - circ.cx, ay - circ.cy) <= Math.max(circ.r, ar); // one centre inside the other circle
+      });
     }
     if (hit) cs.reported = true;
 
@@ -315,12 +317,12 @@
         if (state.cur === camIdx) state.staticUntil = performance.now() + 300;
         sfx.confirm();
         sfx.alienDied();
-        toast('ยืนยันสิ่งผิดปกติ — กำจัดแล้ว', 'good');
+        toast('มันหายไปแล้ว… สำหรับตอนนี้', 'good');
       } else {
         state.stats.wrong++;
         state.lockUntil = state.t + C.wrongReportLockout;
         sfx.wrong();
-        toast(`ไม่พบสิ่งผิดปกติ — ล็อก ${C.wrongReportLockout} วินาที`, 'bad');
+        toast(`ไม่มีอะไรตรงนั้น… แล้วมันอยู่ไหน? · ล็อก ${C.wrongReportLockout} วินาที`, 'bad');
       }
     }, C.reportProcessTime * 1000);
   }
@@ -357,20 +359,22 @@
     state = newState();
     state.running = true;
     cancelDrawing();
-    ['overlayStart', 'overlayEnd', 'processing', 'jumpscare', 'pauseNote'].forEach((id) => $(id).classList.add('hidden'));
-    screenEl.style.transform = '';
+    ['overlayStart', 'overlayEnd', 'processing', 'jumpscare', 'pauseNote', ...PANELS].forEach((id) => $(id).classList.add('hidden'));
+    $('pauseMain').classList.remove('hidden');
+    panelReturn = null;
+    view.style.transform = '';
     $('dangerTint').style.opacity = 0;
     updateCamUI();
     updateClockUI();
     sfx.shiftStart();
-    toast('เริ่มเวร — เปิดดูทุกกล้องแล้วจำภาพไว้', 'info', 3000);
+    toast('เที่ยงคืนแล้ว… จำทุกห้องไว้ ก่อนที่มันจะมา', 'info', 3500);
   }
 
   function showEnd(won, room) {
     state.running = false;
     state.over = true;
     cancelDrawing();
-    screenEl.style.transform = '';
+    view.style.transform = '';
     $('dangerTint').style.opacity = 0;
     const s = state.stats;
     const t = $('endTitle');
@@ -393,13 +397,75 @@
     if (!state.running) return;
     state.paused = !state.paused;
     $('pauseNote').classList.toggle('hidden', !state.paused);
-    if (state.paused) { cancelDrawing(); screenEl.style.transform = ''; }
+    if (state.paused) {
+      const { h, m } = clockParts();
+      $('pauseTag').textContent = `${U.pad(h)}:${U.pad(m)} · มันยังรออยู่`;
+      focusFirst($('pauseMain'));
+    } else {
+      PANELS.forEach((p) => $(p).classList.add('hidden'));
+      $('pauseMain').classList.remove('hidden');
+      panelReturn = null;
+    }
+    if (state.paused) { cancelDrawing(); view.style.transform = ''; }
     sfx.setPaused(state.paused);
   }
 
   function toggleMute() {
-    $('btnMute').classList.toggle('muted', sfx.toggleMute());
+    const muted = sfx.toggleMute();
+    $('btnMute').classList.toggle('muted', muted);
+    document.querySelectorAll('.sound-toggle').forEach((b) => { b.textContent = muted ? 'เสียง: ปิด' : 'เสียง: เปิด'; });
   }
+
+  // ---------- Title / pause menus ----------
+  const PANELS = ['panelHow', 'panelCredits'];
+  let panelReturn = null; // the menu to go back to when a sub-page closes
+  const focusFirst = (el) => setTimeout(() => el.querySelector('.menu-item:not(:disabled)')?.focus({ preventScroll: true }), 30);
+  function openPanel(id, from) {
+    panelReturn = from;
+    from.classList.add('hidden');
+    $(id).classList.remove('hidden');
+    focusFirst($(id));
+  }
+  function closePanels() {
+    PANELS.forEach((p) => $(p).classList.add('hidden'));
+    if (panelReturn) { panelReturn.classList.remove('hidden'); focusFirst(panelReturn); }
+    panelReturn = null;
+  }
+  document.querySelectorAll('[data-panel]').forEach((b) => { b.onclick = () => openPanel(b.dataset.panel, b.closest('.title-main')); });
+  document.querySelectorAll('[data-back]').forEach((b) => { b.onclick = closePanels; });
+  document.querySelectorAll('.sound-toggle').forEach((b) => { b.onclick = toggleMute; });
+  // Esc closes a sub-page; up/down arrows move through whichever menu is on screen
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && PANELS.some((p) => !$(p).classList.contains('hidden'))) return closePanels();
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    const menu = [$('titleMenu'), $('pauseMenu')].find((m) => m.getClientRects().length);
+    if (!menu) return;
+    const items = [...menu.querySelectorAll('.menu-item:not(:disabled)')];
+    const i = items.indexOf(document.activeElement);
+    items[((e.key === 'ArrowDown' ? i + 1 : i - 1) + items.length) % items.length].focus();
+    e.preventDefault();
+  });
+
+  function resume() { if (state.paused) { togglePause(); enterFullscreen(); } }
+  function quitToTitle() {
+    state.running = false;
+    state.paused = false;
+    cancelDrawing();
+    view.style.transform = '';
+    $('dangerTint').style.opacity = 0;
+    ['pauseNote', 'processing', 'overlayEnd', ...PANELS].forEach((id) => $(id).classList.add('hidden'));
+    panelReturn = null;
+    $('pauseMain').classList.remove('hidden');
+    $('titleMain').classList.remove('hidden');
+    $('overlayStart').classList.remove('hidden');
+    sfx.setPaused(false);
+    sfx.title();
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    focusFirst($('titleMain'));
+  }
+  $('btnResume').onclick = resume;
+  $('btnRetry').onclick = startGame;
+  $('btnQuit').onclick = quitToTitle;
 
   // ---------- Input ----------
   // Browsers only allow audio after the first click / key press
@@ -421,7 +487,6 @@
   $('arrowL').onclick = tap(() => switchCam(state.cur - 1));
   $('arrowR').onclick = tap(() => switchCam(state.cur + 1));
   $('btnMute').onclick = tap(toggleMute);
-  $('pauseNote').onclick = () => { if (state.paused) { togglePause(); enterFullscreen(); } };
   $('btnStart').onclick = startGame;
   $('btnRestart').onclick = startGame;
 
@@ -436,6 +501,7 @@
     updateClockUI();
     btnStart.disabled = false;
     btnStart.textContent = 'เริ่มเวร';
+    btnStart.focus({ preventScroll: true });
     requestAnimationFrame((t) => { last = t; frame(t); });
   });
 })();

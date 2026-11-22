@@ -93,6 +93,7 @@ window.GameAudio = (() => {
       this.title();
     },
     title() {
+      clearTimeout(creepyTimer);
       fade('title', 0.5, 2000);
       ['main', 'danger', 'room', 'static'].forEach((n) => fade(n, 0, 600));
     },

@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>กะดึก — เฝ้ากล้องวงจรปิด</title>
+  <title>เอเลีย 51 — เฝ้ากล้องวงจรปิด</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="grunge"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" /><feDisplacementMap in="SourceGraphic" scale="5" /></filter>
+    </svg>
   <div id="game">
     <div id="screen">
       <canvas id="view" width="1280" height="720"></canvas>
@@ -47,20 +50,48 @@
       </div>
     </div>
 
-    <div id="pauseNote" class="overlay morph hidden">
-      <div class="card small">
-        <h2>หยุดชั่วคราว</h2>
-        <p>คลิกที่นี่หรือกด <b>P</b> เพื่อกลับเข้าเวร (เต็มจอ)</p>
+    <div id="pauseNote" class="overlay pause-screen morph hidden">
+      <div class="title-vignette"></div>
+      <div id="pauseMain" class="title-main morph">
+        <h1 class="title-logo small" data-text="หยุดชั่วคราว">หยุดชั่วคราว</h1>
+        <p class="title-tag" id="pauseTag">00:00 · มันยังรออยู่</p>
+        <nav class="menu" id="pauseMenu">
+          <button class="menu-item" id="btnResume">กลับเข้าเวร</button>
+          <button class="menu-item" data-panel="panelHow">วิธีเล่น</button>
+          <button class="menu-item sound-toggle">เสียง: เปิด</button>
+          <button class="menu-item" id="btnRetry">เริ่มเวรใหม่</button>
+          <button class="menu-item" id="btnQuit">กลับหน้าหลัก</button>
+        </nav>
+        <p class="hint">กด <b>P</b> เพื่อกลับเข้าเวร</p>
       </div>
     </div>
     <div id="flash"></div>
   </div>
 
-  <!-- Intro -->
-  <div id="overlayStart" class="overlay morph">
+  <!-- Title menu -->
+  <div id="overlayStart" class="overlay title-screen morph">
+    <div class="title-bg"></div>
+    <div class="title-noise"></div>
+    <div class="title-vignette"></div>
+
+    <div id="titleMain" class="title-main morph">
+      <h1 class="title-logo" data-text="เอเลีย 51">เอเลีย 51</h1>
+      <p class="title-tag">NIGHT SHIFT · 00:00 — 06:00</p>
+      <nav class="menu" id="titleMenu">
+        <button id="btnStart" class="menu-item">กำลังโหลด…</button>
+        <button class="menu-item" data-panel="panelHow">วิธีเล่น</button>
+        <button class="menu-item sound-toggle">เสียง: เปิด</button>
+        <button class="menu-item" data-panel="panelCredits">เครดิต</button>
+      </nav>
+      <p class="hint"><svg class="hint-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></svg> ใส่หูฟัง · ปิดไฟ · อย่าหันหลัง</p>
+    </div>
+
+  </div>
+
+  <!-- Sub-pages shared by the title and pause menus -->
+  <div id="panelHow" class="menu-panel morph hidden">
     <div class="intro">
-      <h1>กะดึก</h1>
-      <p class="sub">22/11/2026 · ยามรักษาความปลอดภัย · เวรกลางคืน</p>
+      <h2 class="panel-head">วิธีเล่น</h2>
       <p class="story">
         บ้านหลังนี้ถูกทิ้งว่างไว้ตั้งแต่เจ้าของย้ายออกไปกะทันหัน หลังจากคืนที่ลูกสาวคนเล็กบอกว่า
         มี "แขก" ตัวผอมสูงมายืนมองเธอจากปลายเตียง เจ้าของจึงจ้างคุณมาเฝ้ากล้องวงจรปิดทั้ง 10 ตัว
@@ -75,8 +106,21 @@
         <li>สิ่งผิดปกติแต่ละตัวให้เวลาแค่ <b>15 วินาที</b> — ถ้า <b>ภาพกล้องเริ่มสั่น</b> แปลว่าเหลือเวลาไม่มาก</li>
         <li>ถ้าภาพสั่นแรงขึ้น … <b>มันกำลังมาหาคุณ</b></li>
       </ol>
-      <button id="btnStart" class="btn">กำลังโหลด…</button>
-      <p class="hint"><svg class="hint-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></svg> แนะนำให้ใส่หูฟัง · เกมจะเข้าสู่โหมดเต็มจอ · <b>P</b> หยุดชั่วคราว · <b>M</b> ปิดเสียง · <b>Esc</b> ยกเลิกการวาด</p>
+      <p class="hint">เกมจะเข้าสู่โหมดเต็มจอ · <b>P</b> หยุดชั่วคราว · <b>M</b> ปิดเสียง · <b>Esc</b> ยกเลิกการวาด</p>
+      <button class="menu-item back" data-back>‹ กลับ</button>
+    </div>
+  </div>
+
+  <div id="panelCredits" class="menu-panel morph hidden">
+    <div class="intro">
+      <h2 class="panel-head">เครดิต</h2>
+      <p class="credits">
+        สร้างขึ้นสำหรับ <b>Game Jam 2026</b><br>
+        เสียงทุกเสียงอัดและปรุงเองโดยทีม<br>
+        เพลงและเอฟเฟกต์สังเคราะห์ด้วยโค้ด<br><br>
+        <span class="dim">ขอบคุณที่อยู่เวรจนจบ … ถ้าคุณรอดนะ</span>
+      </p>
+      <button class="menu-item back" data-back>‹ กลับ</button>
     </div>
   </div>
 

@@ -31,7 +31,7 @@ window.ANOMALY_DATA = {
     {"num":"03","anomaly":{"x":0.51,"y":0.345,"r":0.045}},
     {"num":"04","anomaly":{"x":0.503,"y":0.38,"r":0.055}},
     {"num":"05","anomaly":{"x":0.638,"y":0.39,"r":0.055}},
-    {"num":"06","anomaly":null},
+    {"num":"06","anomaly":{"x":0.33,"y":0.42,"r":0.1}},
     {"num":"07","anomaly":null},
     {"num":"08","anomaly":null},
     {"num":"09","anomaly":null},
@@ -50,7 +50,7 @@ window.ANOMALY_DATA = {
   "cam03": [ // CAM 03 Kitchen
     {"num":"01","anomaly":null},
     {"num":"02","anomaly":{"x":0.144,"y":0.415,"r":0.06}},
-    {"num":"03","anomaly":null},
+    {"num":"03","anomaly":{"x":0.586,"y":0.73,"r":0.05}},
     {"num":"04","anomaly":null},
     {"num":"05","anomaly":null},
     {"num":"06","anomaly":null},
@@ -94,7 +94,7 @@ window.ANOMALY_DATA = {
   "cam05": [ // CAM 05 Living Room
     {"num":"01","anomaly":null},
     {"num":"02","anomaly":{"x":0.718,"y":0.393,"r":0.06}},
-    {"num":"03","anomaly":null},
+    {"num":"03","anomaly":{"x":0.29,"y":0.56,"r":0.1}},
     {"num":"04","anomaly":null},
     {"num":"05","anomaly":null},
     {"num":"06","anomaly":null},
@@ -159,7 +159,7 @@ window.ANOMALY_DATA = {
   ],
   "cam08": [ // CAM 08 Attic
     {"num":"01","anomaly":null},
-    {"num":"02","anomaly":null},
+    {"num":"02","anomaly":{"x":0.171,"y":0.865,"r":0.05,"also":[{"x":0.837,"y":0.51,"r":0.035}]}},
     {"num":"03","anomaly":null},
     {"num":"04","anomaly":null},
     {"num":"05","anomaly":null},
