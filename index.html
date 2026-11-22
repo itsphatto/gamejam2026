@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Night Shift — CCTV Anomaly Watch</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <main id="monitor">
+      <div id="screen">
+        <canvas id="view" width="1280" height="720"></canvas>
+        <canvas id="draw" width="1280" height="720"></canvas>
+        <div class="scanlines"></div>
+        <div class="vignette"></div>
+        <div id="osd">
+          <div class="osd-tl" id="osdCam">CAM 01</div>
+          <div class="osd-tr"><span class="rec-dot"></span>REC</div>
+          <div class="osd-bl" id="osdTime">--</div>
+          <div class="osd-br" id="osdName">--</div>
+        </div>
+        <div id="processing" class="hidden">
+          <div class="proc-text">SENDING REPORT<span class="dots"></span></div>
+        </div>
+        <div id="toast" class="hidden"></div>
+        <div id="pauseNote" class="hidden">PAUSED — press P</div>
+      </div>
+    </main>
+
+    <aside id="panel">
+      <div class="panel-title">SECURITY MONITOR</div>
+      <div id="clock">12:00 AM</div>
+      <div id="shiftbar"><div id="shiftfill"></div></div>
+      <div class="shift-label"><span>12 AM</span><span>6 AM</span></div>
+
+      <div class="section-label">CAMERAS</div>
+      <div id="camGrid"></div>
+
+      <div class="section-label">STATUS</div>
+      <div id="status">Monitoring...</div>
+      <div id="warning" class="hidden">⚠ MULTIPLE ANOMALIES DETECTED</div>
+
+      <div class="help">
+        <b>Draw a circle</b> around the anomaly with your mouse to report it.<br />
+        <b>1–0</b> / <b>← →</b> switch cams · <b>Esc</b> cancel · <b>P</b> pause
+      </div>
+      <div id="demoBadge" class="hidden">DEMO MODE — placeholder anomalies.<br />Mark real ones in <a href="editor.html">editor.html</a></div>
+    </aside>
+  </div>
+
+  <div id="overlayStart" class="overlay">
+    <div class="card">
+      <h1>NIGHT SHIFT</h1>
+      <p class="sub">CCTV ANOMALY WATCH</p>
+      <p>You watch 10 cameras from 12 AM to 6 AM.<br />
+        Things will change when you're not looking.</p>
+      <ul>
+        <li>Switch cameras and memorise each room.</li>
+        <li>When something is wrong, <b>draw a red circle</b> around it.</li>
+        <li>Wrong reports lock you out for a few seconds.</li>
+        <li>Too many unreported anomalies and you're done.</li>
+      </ul>
+      <button id="btnStart">START SHIFT</button>
+    </div>
+  </div>
+
+  <div id="overlayEnd" class="overlay hidden">
+    <div class="card">
+      <h1 id="endTitle">SHIFT COMPLETE</h1>
+      <p id="endText" class="sub"></p>
+      <div id="endStats"></div>
+      <button id="btnRestart">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/anomalies.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
