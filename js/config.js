@@ -11,9 +11,9 @@ window.GAME_CONFIG = {
   spawnInterval: [20, 35],  // random seconds between anomalies at start of night
   lateNightSpeedup: 0.55,   // interval multiplier by the end of the night (smaller = faster)
 
-  anomalyTimeLimit: 15,     // seconds to report an anomaly before the jumpscare (= game over)
-  shakeStart: 8,            // seconds after an anomaly appears: screen starts shaking
-  shakeHard: 13,            // seconds after an anomaly appears: screen shakes hard
+  anomalyTimeLimit: 21,     // seconds to report an anomaly before the jumpscare (= game over)
+  shakeStart: 12,           // seconds after an anomaly appears: screen starts shaking
+  shakeHard: 18,            // seconds after an anomaly appears: screen shakes hard
   reportProcessTime: 2.0,   // seconds "sending report"
   wrongReportLockout: 3.0,  // seconds you can't report after a wrong report
 };

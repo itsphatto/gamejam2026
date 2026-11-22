@@ -495,6 +495,27 @@
   $('btnRestart').onclick = startGame;
   $('btnEndQuit').onclick = quitToTitle;
 
+  // ---------- Brightness (pause menu) ----------
+  const BRIGHT_LEVELS = [0.7, 0.85, 1, 1.15, 1.3, 1.5, 1.75];
+  let brightIdx = BRIGHT_LEVELS.indexOf(Number(localStorage.getItem('a51-brightness')));
+  if (brightIdx < 0) brightIdx = BRIGHT_LEVELS.indexOf(1);
+  function setBrightness(i) {
+    brightIdx = (i + BRIGHT_LEVELS.length) % BRIGHT_LEVELS.length;
+    const v = BRIGHT_LEVELS[brightIdx];
+    document.documentElement.style.setProperty('--bright', v);
+    $('btnBright').textContent = `ความสว่าง: ${Math.round(v * 100)}%`;
+    localStorage.setItem('a51-brightness', v);
+  }
+  setBrightness(brightIdx);
+  $('btnBright').onclick = () => setBrightness(brightIdx + 1); // click cycles up, wraps to darkest
+  $('btnBright').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.stopPropagation(); // don't switch cameras behind the pause menu
+    e.preventDefault();
+    const next = brightIdx + (e.key === 'ArrowRight' ? 1 : -1);
+    if (next >= 0 && next < BRIGHT_LEVELS.length) setBrightness(next);
+  });
+
   // ---------- Boot ----------
   const btnStart = $('btnStart');
   btnStart.disabled = true;
