@@ -161,9 +161,17 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .btn:disabled { opacity: 0.5; cursor: wait; }
 .hint { margin-top: 2.5vh; font-size: clamp(12px, 0.95vw, 15px); color: #66665f; }
 .hint b { color: #9a9a92; }
-#endTitle.lose { color: var(--red); text-shadow: 0 0 22px rgba(255,48,48,0.5); }
-#endStats { margin: 0 auto 4vh; line-height: 2; font-size: clamp(15px, 1.3vw, 21px); color: #c8c8c0; }
-#endStats b { color: #fff; }
+/* End screen: same look as the title menu */
+#endTitle.lose { color: var(--red); text-shadow: 0 0 30px rgba(255,48,48,0.5), 0 6px 0 rgba(0,0,0,0.6); }
+#endText { margin-bottom: 4vh; letter-spacing: 0.25em; font-family: var(--thai), var(--font); text-align: center; max-width: 80vw; }
+#endStats {
+  margin: 0 auto 5vh; padding: 1.6vh 3vw; line-height: 2; text-align: center;
+  font-family: var(--thai); font-size: clamp(15px, 1.3vw, 21px); color: #8f8c84; letter-spacing: 0.08em;
+  border-top: 1px solid rgba(217,214,204,0.15); border-bottom: 1px solid rgba(217,214,204,0.15);
+}
+#endStats b { color: #d9d6cc; }
+.end-screen.won .title-bg { background-image: url('../assets/cam01/01.png'); filter: grayscale(0.6) sepia(0.25) brightness(0.55) contrast(1.15) blur(1px); }
+.end-screen.lost .title-bg { filter: grayscale(1) brightness(0.35) contrast(1.3) blur(1px) sepia(0.4) hue-rotate(-40deg) saturate(2.5); }
 .card.small { padding: 30px 50px; text-align: center; font-family: var(--thai); background: rgba(10,10,10,0.9); border: 1px solid #333; border-radius: 8px; }
 .card.small h2 { font-weight: 400; letter-spacing: 6px; margin-bottom: 10px; }
 body.scared .arrow, body.scared #btnMute { display: none; }

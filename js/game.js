@@ -379,7 +379,10 @@
     const s = state.stats;
     const t = $('endTitle');
     t.textContent = won ? 'รอดแล้ว' : 'มันมาถึงตัวคุณแล้ว';
+    t.dataset.text = t.textContent; // glitch layers copy the title text
     t.classList.toggle('lose', !won);
+    $('overlayEnd').classList.toggle('won', won);
+    $('overlayEnd').classList.toggle('lost', !won);
     $('endText').textContent = won
       ? 'คุณเฝ้าจนถึง 06:00 … ฟ้าเริ่มสว่างแล้ว'
       : `คุณปล่อยสิ่งผิดปกติที่ ${room.cam.label} ${room.cam.name} ไว้นานเกินไป`;
@@ -391,6 +394,7 @@
       รายงานผิด: <b>${s.wrong}</b>`;
     sfx.end(won);
     $('overlayEnd').classList.remove('hidden');
+    focusFirst($('endMain'));
   }
 
   function togglePause() {
@@ -438,7 +442,7 @@
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && PANELS.some((p) => !$(p).classList.contains('hidden'))) return closePanels();
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    const menu = [$('titleMenu'), $('pauseMenu')].find((m) => m.getClientRects().length);
+    const menu = [$('titleMenu'), $('pauseMenu'), $('endMenu')].find((m) => m.getClientRects().length);
     if (!menu) return;
     const items = [...menu.querySelectorAll('.menu-item:not(:disabled)')];
     const i = items.indexOf(document.activeElement);
@@ -489,6 +493,7 @@
   $('btnMute').onclick = tap(toggleMute);
   $('btnStart').onclick = startGame;
   $('btnRestart').onclick = startGame;
+  $('btnEndQuit').onclick = quitToTitle;
 
   // ---------- Boot ----------
   const btnStart = $('btnStart');

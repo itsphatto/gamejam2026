@@ -3,7 +3,7 @@ window.GAME_CONFIG = {
   imagesPerCam: 20,                         // images per room: assets/camXX/01.jpg ... 20.jpg
   exts: ['jpg', 'png', 'jpeg', 'webp'],     // extensions tried in this order
 
-  secondsPerHour: 60,       // real seconds per in-game hour
+  secondsPerHour: 35,       // real seconds per in-game hour (6 h x 35 s = 3.5 min shift)
   startHour: 0,             // 0 = 12 AM
   endHour: 6,               // shift ends at 6 AM
 

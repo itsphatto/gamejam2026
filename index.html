@@ -115,7 +115,10 @@
     <div class="intro">
       <h2 class="panel-head">เครดิต</h2>
       <p class="credits">
-        สร้างขึ้นสำหรับ <b>Game Jam 2026</b><br>
+        สร้างขึ้นสำหรับ <b>Game Jam 2026</b><br><br>
+        <b>@itsphatto</b> · Lead Developer<br>
+        <b>@Sapfire151</b> · Lead Frontend Developer<br>
+        <b>@Markinwza</b> · SFX Specialist, Scene Specialist<br><br>
         เสียงทุกเสียงอัดและปรุงเองโดยทีม<br>
         เพลงและเอฟเฟกต์สังเคราะห์ด้วยโค้ด<br><br>
         <span class="dim">ขอบคุณที่อยู่เวรจนจบ … ถ้าคุณรอดนะ</span>
@@ -125,12 +128,19 @@
   </div>
 
   <!-- End -->
-  <div id="overlayEnd" class="overlay morph hidden">
-    <div class="intro end">
-      <h1 id="endTitle">จบเวร</h1>
-      <p id="endText" class="sub"></p>
+  <div id="overlayEnd" class="overlay title-screen end-screen morph hidden">
+    <div class="title-bg"></div>
+    <div class="title-noise"></div>
+    <div class="title-vignette"></div>
+
+    <div id="endMain" class="title-main">
+      <h1 id="endTitle" class="title-logo small" data-text="จบเวร">จบเวร</h1>
+      <p id="endText" class="title-tag"></p>
       <div id="endStats"></div>
-      <button id="btnRestart" class="btn">เริ่มเวรใหม่</button>
+      <nav class="menu" id="endMenu">
+        <button id="btnRestart" class="menu-item">เริ่มเวรใหม่</button>
+        <button id="btnEndQuit" class="menu-item">กลับหน้าหลัก</button>
+      </nav>
     </div>
   </div>
 
