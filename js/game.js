@@ -6,32 +6,21 @@
   const W = 1280, H = 720;
   const $ = (id) => document.getElementById(id);
 
+  const screenEl = $('screen');
   const view = $('view'), vctx = view.getContext('2d');
   const draw = $('draw'), dctx = draw.getContext('2d');
+  const sfx = window.GameAudio; // real sound files, see js/audio.js
 
   // ---------- Room data ----------
   const rooms = CAMS.map((cam, index) => ({ cam, index, entries: U.getEntries(cam.id, window.ANOMALY_DATA) }));
-  const demo = !rooms.some((r) => r.entries.some((e) => e.anomaly));
-  if (demo) $('demoBadge').classList.remove('hidden');
-
-  // Called once all images have tried to load
+  // Called once all images have tried to load. Only images that exist are used;
+  // a room with no anomaly images simply never gets an anomaly.
   function prepareRooms() {
     rooms.forEach((r) => {
       const exists = (e) => !!U.getLoaded(r.cam.id, e.num);
-      // Only use normal images that actually exist; fall back to placeholder if none
       r.normals = r.entries.filter((e) => !e.anomaly && exists(e));
-      if (!r.normals.length) r.normals = [{ num: r.entries[0].num, anomaly: null }];
-      if (demo) {
-        // No anomalies marked yet: 8 test aliens per room, drawn over the normal image
-        const rand = U.rng(r.index * 131 + 3);
-        r.anoms = Array.from({ length: 8 }, (_, i) => ({
-          num: `demo${i}`, overlay: true,
-          anomaly: { x: 0.12 + rand() * 0.76, y: 0.3 + rand() * 0.45, r: 0.035 + rand() * 0.035 },
-        }));
-      } else {
-        // Anomaly whose image file is missing -> show alien over the normal image instead
-        r.anoms = r.entries.filter((e) => e.anomaly).map((e) => exists(e) ? e : { ...e, overlay: true });
-      }
+      if (!r.normals.length) r.normals = [{ num: r.entries[0].num, anomaly: null }]; // placeholder
+      r.anoms = r.entries.filter((e) => e.anomaly && exists(e));
     });
   }
 
@@ -54,33 +43,6 @@
     vctx.globalAlpha = 1;
   };
 
-  // ---------- Audio (WebAudio, no files needed) ----------
-  let actx = null;
-  const ac = () => (actx ||= new (window.AudioContext || window.webkitAudioContext)());
-  function beep(freq, dur, type = 'square', vol = 0.04, delay = 0) {
-    const a = ac(), o = a.createOscillator(), g = a.createGain();
-    o.type = type; o.frequency.value = freq;
-    const t = a.currentTime + delay;
-    g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(a.destination);
-    o.start(t); o.stop(t + dur);
-  }
-  function staticSound(dur = 0.12, vol = 0.05) {
-    const a = ac(), len = a.sampleRate * dur, buf = a.createBuffer(1, len, a.sampleRate);
-    const ch = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
-    const s = a.createBufferSource(), g = a.createGain();
-    g.gain.value = vol; s.buffer = buf; s.connect(g).connect(a.destination); s.start();
-  }
-  const sfx = {
-    switch: () => { staticSound(0.1, 0.04); beep(1200, 0.03, 'square', 0.02); },
-    good: () => { beep(660, 0.12, 'sine', 0.08); beep(990, 0.18, 'sine', 0.08, 0.12); },
-    bad: () => { beep(160, 0.35, 'sawtooth', 0.06); },
-    alarm: () => { [0, 0.25, 0.5].forEach((d) => beep(880, 0.18, 'square', 0.05, d)); },
-    send: () => beep(1500, 0.05, 'square', 0.03),
-  };
-
   // ---------- State ----------
   let state = { running: false, paused: false, processing: false, t: 0, cur: 0, cams: [] }; // until images load
   function newState() {
@@ -91,27 +53,26 @@
       processing: false,
       lockUntil: 0,         // game seconds
       nextSpawn: C.firstAnomalyDelay,
+      shakeLevel: 0,        // 0 none, 1 shaking, 2 hard
       cams: rooms.map((r) => ({
         index: r.index,
         base: r.normals[(Math.random() * r.normals.length) | 0],
-        active: null,
+        active: null,       // anomaly entry currently shown
+        since: 0,           // game time it appeared
+        reported: false,    // correct report already sent (timer stopped)
         used: new Set(),
       })),
       stats: { spawned: 0, found: 0, wrong: 0 },
     };
   }
   const totalTime = () => (C.endHour - C.startHour) * C.secondsPerHour;
-  const activeCount = () => state.cams.filter((c) => c.active).length;
 
-  // ---------- UI: camera buttons ----------
-  const camGrid = $('camGrid');
-  const camBtns = CAMS.map((cam, i) => {
-    const b = document.createElement('button');
-    b.className = 'cam-btn';
-    b.innerHTML = `<span class="num">${cam.label}</span><span>${cam.name}</span>`;
-    b.onclick = () => switchCam(i);
-    camGrid.appendChild(b);
-    return b;
+  // ---------- Camera switching ----------
+  const camDots = CAMS.map(() => {
+    const d = document.createElement('span');
+    d.className = 'cam-dot';
+    $('camDots').appendChild(d);
+    return d;
   });
 
   function switchCam(i) {
@@ -121,15 +82,14 @@
     cancelDrawing();
     state.cur = i;
     state.staticUntil = performance.now() + 180;
-    sfx.switch();
+    sfx.switchCam();
     updateCamUI();
   }
 
   function updateCamUI() {
-    camBtns.forEach((b, i) => b.classList.toggle('active', i === state.cur));
     const cam = CAMS[state.cur];
-    $('osdCam').textContent = cam.label;
-    $('osdName').textContent = cam.name;
+    $('osdCam').textContent = `${cam.label} ${cam.name}`;
+    camDots.forEach((d, i) => d.classList.toggle('on', i === state.cur));
   }
 
   let toastTimer = 0;
@@ -139,24 +99,22 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.add('hidden'), ms);
   }
-  const setStatus = (t) => { $('status').textContent = t; };
 
-  // ---------- Clock ----------
+  // ---------- Clock (24h) ----------
   function clockParts() {
     const gameSec = (state.t / C.secondsPerHour) * 3600 + C.startHour * 3600;
-    const h24 = Math.floor(gameSec / 3600) % 24;
-    const m = Math.floor(gameSec / 60) % 60;
-    const s = Math.floor(gameSec) % 60;
-    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-    return { h12, m, s, ampm: h24 < 12 ? 'AM' : 'PM' };
+    return {
+      h: Math.floor(gameSec / 3600) % 24,
+      m: Math.floor(gameSec / 60) % 60,
+      s: Math.floor(gameSec) % 60,
+    };
   }
   const today = new Date();
-  const dateStr = `${U.pad(today.getMonth() + 1)}/${U.pad(today.getDate())}/${today.getFullYear()}`;
+  const dateStr = `${U.pad(today.getDate())}/${U.pad(today.getMonth() + 1)}/${today.getFullYear()}`;
   function updateClockUI() {
-    const { h12, m, s, ampm } = clockParts();
-    $('clock').textContent = `${h12}:${U.pad(m)} ${ampm}`;
-    $('osdTime').textContent = `${dateStr}  ${U.pad(h12)}:${U.pad(m)}:${U.pad(s)} ${ampm}`;
-    $('shiftfill').style.width = `${Math.min(100, (state.t / totalTime()) * 100)}%`;
+    const { h, m, s } = clockParts();
+    $('osdClock').textContent = `${U.pad(h)}:${U.pad(m)}`;
+    $('osdTime').textContent = `${dateStr}  ${U.pad(h)}:${U.pad(m)}:${U.pad(s)}`;
   }
 
   // ---------- Anomaly spawning ----------
@@ -178,13 +136,79 @@
     const e = pool[(Math.random() * pool.length) | 0];
     cs.used.add(e.num);
     cs.active = e;
+    cs.since = state.t;
+    cs.reported = false;
     state.stats.spawned++;
     scheduleNext();
+  }
 
-    const n = activeCount();
-    if (n >= C.maxActiveAnomalies) return endGame(false);
-    if (n === C.maxActiveAnomalies - 1) sfx.alarm();
-    $('warning').classList.toggle('hidden', n < C.maxActiveAnomalies - 1);
+  // ---------- 10-second timer: shake, then jumpscare ----------
+  function oldestUnreported() {
+    let worst = null;
+    for (const cs of state.cams) {
+      if (cs.active && !cs.reported && (!worst || cs.since < worst.since)) worst = cs;
+    }
+    return worst;
+  }
+
+  function updateDanger() {
+    const cs = oldestUnreported();
+    const age = cs ? state.t - cs.since : 0;
+    if (cs && age >= C.anomalyTimeLimit) return jumpscare(cs);
+    const level = !cs || age < C.shakeStart ? 0 : age < C.shakeHard ? 1 : 2;
+    if (level !== state.shakeLevel) {
+      if (level >= 1 && state.shakeLevel === 0) { sfx.warning(); sfx.setDanger(true); }
+      if (level === 0) sfx.setDanger(false);
+      state.shakeLevel = level;
+    }
+    // shake amount grows with time
+    let amp = 0;
+    if (level === 1) amp = 2 + ((age - C.shakeStart) / (C.shakeHard - C.shakeStart)) * 5; // 2 -> 7 px
+    if (level === 2) amp = 14;
+    if (amp > 0) {
+      const dx = (Math.random() * 2 - 1) * amp, dy = (Math.random() * 2 - 1) * amp;
+      const rot = (Math.random() * 2 - 1) * amp * 0.05;
+      screenEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+    } else {
+      screenEl.style.transform = '';
+    }
+    $('dangerTint').style.opacity = level === 0 ? 0 : level === 1 ? 0.35 : 0.9;
+  }
+
+  function jumpscare(cs) {
+    state.running = false;
+    state.over = true;
+    state.processing = false;
+    cancelDrawing();
+    $('processing').classList.add('hidden');
+    screenEl.style.transform = '';
+    $('dangerTint').style.opacity = 0;
+
+    const room = rooms[cs.index];
+    const a = cs.active.anomaly;
+    const res = U.getLoaded(room.cam.id, cs.active.num);
+    const img = $('jumpImg');
+    if (res) img.src = res.src;
+    else img.src = view.toDataURL(); // fallback: whatever is on screen
+    // zoom onto the creature's upper body / face (a bit above the circle centre)
+    const z = Math.min(7, Math.max(3, 0.32 / a.r));
+    const fx = a.x, fy = Math.max(0.08, a.y - a.r * (W / H) * 0.55);
+    img.style.setProperty('--ox', `${fx * 100}%`);
+    img.style.setProperty('--oy', `${fy * 100}%`);
+    img.style.setProperty('--tx', `${(0.5 - fx) * 100}%`);
+    img.style.setProperty('--ty', `${(0.5 - fy) * 100}%`);
+    document.body.classList.add('scared');
+    img.style.setProperty('--z', z);
+    $('jumpscare').classList.remove('hidden');
+    const flash = $('flash');
+    flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+    sfx.jumpscare();
+
+    setTimeout(() => {
+      $('jumpscare').classList.add('hidden');
+      document.body.classList.remove('scared');
+      showEnd(false, room);
+    }, 1700);
   }
 
   // ---------- Rendering ----------
@@ -193,16 +217,15 @@
     if (now < state.staticUntil) { noise(1); return; }
     const room = rooms[state.cur];
     const cs = state.cams[state.cur];
-    const overlay = cs.active && cs.active.overlay;
-    const entry = cs.active && !overlay ? cs.active : cs.base;
+    if (!cs) return;
+    const entry = cs.active || cs.base;
     const res = U.getLoaded(room.cam.id, entry.num);
     if (res) vctx.drawImage(res.img, 0, 0, W, H);
     else U.drawPlaceholder(vctx, W, H, room.index, room.cam, entry);
-    if (overlay) U.drawAlien(vctx, W, H, cs.active.anomaly);
-    noise(state.processing ? 0.22 : 0.05);
-    // occasional rolling glitch line
-    if (Math.random() < 0.03) {
-      vctx.fillStyle = 'rgba(255,255,255,0.06)';
+    noise(state.processing ? 0.22 : 0.05 + state.shakeLevel * 0.05);
+    // occasional rolling glitch line (more often when in danger)
+    if (Math.random() < 0.03 + state.shakeLevel * 0.08) {
+      vctx.fillStyle = 'rgba(255,255,255,0.07)';
       vctx.fillRect(0, Math.random() * H, W, 4 + Math.random() * 10);
     }
   }
@@ -229,7 +252,7 @@
   draw.addEventListener('pointerdown', (ev) => {
     if (!state.running || state.paused || state.processing) return;
     if (state.t < state.lockUntil) {
-      toast(`REPORTING LOCKED ${Math.ceil(state.lockUntil - state.t)}s`, 'bad', 900);
+      toast(`ถูกล็อกการรายงาน อีก ${Math.ceil(state.lockUntil - state.t)} วินาที`, 'bad', 900);
       return;
     }
     draw.setPointerCapture(ev.pointerId);
@@ -243,56 +266,56 @@
   draw.addEventListener('pointerup', () => { if (stroke) finishStroke(); });
   draw.addEventListener('pointercancel', cancelDrawing);
 
-  function fitCircle(pts) {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of pts) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    const r = pts.reduce((s, p) => s + Math.hypot(p.x - cx, p.y - cy), 0) / pts.length;
-    return { cx, cy, r };
-  }
+  // Thai text for the lasso check results (lib/lasso.js reason codes)
+  const LASSO_TH = {
+    short: 'วาดเป็นวงให้ครบ',
+    open: 'วาดวงให้ปิด — ปลายเส้นต้องบรรจบกัน',
+    too_big: 'วงใหญ่เกินไป — วงให้แม่นกว่านี้',
+    scribble: 'ห้ามขีดมั่ว — วาดเป็นวงกลม',
+    too_small: 'วงเล็กเกินไป',
+  };
 
   function finishStroke() {
     const pts = stroke;
-    if (pts.length < 8) return cancelDrawing();
-    const circ = fitCircle(pts);
-    if (circ.r < C.minCircleRadius * H) { toast('CIRCLE TOO SMALL', 'info', 900); return cancelDrawing(); }
-    if (circ.r > C.maxCircleRadius * H) { toast('CIRCLE TOO BIG — BE PRECISE', 'info', 1200); return cancelDrawing(); }
+    const res = Lasso.analyze(pts, W, H);
+    if (!res.ok) { toast(LASSO_TH[res.reason] || res.message, 'info', 1200); return cancelDrawing(); }
     stroke = null;
-    submitReport(circ, state.cur);
+    submitReport(res, state.cur);
   }
 
   function submitReport(circ, camIdx) {
+    // Judge immediately so a correct report stops the 10-second timer right away
+    const cs = state.cams[camIdx];
+    const a = cs.active && !cs.reported && cs.active.anomaly;
+    let hit = false;
+    if (a) {
+      const ax = a.x * W, ay = a.y * H, ar = a.r * W;
+      hit = Math.hypot(ax - circ.cx, ay - circ.cy) <= Math.max(circ.r, ar); // one centre inside the other circle
+    }
+    if (hit) cs.reported = true;
+
     state.processing = true;
     $('processing').classList.remove('hidden');
-    sfx.send();
-    setStatus(`Sending report for ${CAMS[camIdx].label}...`);
+    sfx.reportStart();
     setTimeout(() => {
       if (!state.running) return;
       state.processing = false;
+      sfx.reportEnd();
       $('processing').classList.add('hidden');
       dctx.clearRect(0, 0, W, H);
-      const cs = state.cams[camIdx];
-      const a = cs.active && cs.active.anomaly;
-      let hit = false;
-      if (a) {
-        const ax = a.x * W, ay = a.y * H, ar = a.r * W;
-        const d = Math.hypot(ax - circ.cx, ay - circ.cy);
-        hit = d <= Math.max(circ.r, ar); // one centre inside the other circle
-      }
       if (hit) {
         cs.active = null;
+        cs.reported = false;
         state.stats.found++;
-        state.staticUntil = performance.now() + 300;
-        sfx.good();
-        toast('ANOMALY CONFIRMED — REMOVED', 'good');
-        setStatus(`${CAMS[camIdx].label}: anomaly removed.`);
-        $('warning').classList.toggle('hidden', activeCount() < C.maxActiveAnomalies - 1);
+        if (state.cur === camIdx) state.staticUntil = performance.now() + 300;
+        sfx.confirm();
+        sfx.alienDied();
+        toast('ยืนยันสิ่งผิดปกติ — กำจัดแล้ว', 'good');
       } else {
         state.stats.wrong++;
         state.lockUntil = state.t + C.wrongReportLockout;
-        sfx.bad();
-        toast('NO ANOMALY FOUND', 'bad');
-        setStatus(`False report. Locked for ${C.wrongReportLockout}s.`);
+        sfx.wrong();
+        toast(`ไม่พบสิ่งผิดปกติ — ล็อก ${C.wrongReportLockout} วินาที`, 'bad');
       }
     }, C.reportProcessTime * 1000);
   }
@@ -305,70 +328,101 @@
     if (state.running && !state.paused) {
       state.t += dt;
       if (state.t >= state.nextSpawn && !state.processing) trySpawn();
-      if (state.running && state.t >= totalTime()) endGame(true);
-      updateClockUI();
+      updateDanger();
+      if (state.running && state.t >= totalTime()) showEnd(true);
+      if (state.running) updateClockUI();
     }
-    if (!state.paused) renderView();
+    if (!state.paused && !state.over) renderView();
     requestAnimationFrame(frame);
   }
 
+  // ---------- Full screen ----------
+  function enterFullscreen() {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  }
+  document.addEventListener('fullscreenchange', () => {
+    // leaving full screen during a shift pauses the game
+    if (!document.fullscreenElement && state.running && !state.paused) togglePause();
+  });
+
   // ---------- Start / end ----------
   function startGame() {
+    enterFullscreen();
     state = newState();
     state.running = true;
     cancelDrawing();
-    ['overlayStart', 'overlayEnd', 'processing'].forEach((id) => $(id).classList.add('hidden'));
-    $('warning').classList.add('hidden');
-    setStatus('Monitoring... memorise each room.');
+    ['overlayStart', 'overlayEnd', 'processing', 'jumpscare', 'pauseNote'].forEach((id) => $(id).classList.add('hidden'));
+    screenEl.style.transform = '';
+    $('dangerTint').style.opacity = 0;
     updateCamUI();
     updateClockUI();
-    ac().resume?.();
-    sfx.switch();
+    sfx.shiftStart();
+    toast('เริ่มเวร — เปิดดูทุกกล้องแล้วจำภาพไว้', 'info', 3000);
   }
 
-  function endGame(won) {
+  function showEnd(won, room) {
     state.running = false;
     state.over = true;
     cancelDrawing();
+    screenEl.style.transform = '';
+    $('dangerTint').style.opacity = 0;
     const s = state.stats;
     const t = $('endTitle');
-    t.textContent = won ? 'SHIFT COMPLETE' : 'SIGNAL LOST';
+    t.textContent = won ? 'รอดแล้ว' : 'มันมาถึงตัวคุณแล้ว';
     t.classList.toggle('lose', !won);
-    $('endText').textContent = won ? 'You survived until 6 AM.' : `Too many anomalies went unreported (${C.maxActiveAnomalies}).`;
-    const { h12, m, ampm } = clockParts();
+    $('endText').textContent = won
+      ? 'คุณเฝ้าจนถึง 06:00 … ฟ้าเริ่มสว่างแล้ว'
+      : `คุณปล่อยสิ่งผิดปกติที่ ${room.cam.label} ${room.cam.name} ไว้นานเกินไป`;
+    const { h, m } = clockParts();
     $('endStats').innerHTML = `
-      Time reached: <b>${h12}:${U.pad(m)} ${ampm}</b><br>
-      Anomalies appeared: <b>${s.spawned}</b><br>
-      Correct reports: <b>${s.found}</b><br>
-      False reports: <b>${s.wrong}</b><br>
-      Left unreported: <b>${activeCount()}</b>`;
-    if (won) sfx.good(); else sfx.alarm();
-    setTimeout(() => $('overlayEnd').classList.remove('hidden'), won ? 300 : 900);
+      เวลาที่รอดได้: <b>${U.pad(h)}:${U.pad(m)}</b><br>
+      สิ่งผิดปกติที่ปรากฏ: <b>${s.spawned}</b><br>
+      รายงานถูก: <b>${s.found}</b><br>
+      รายงานผิด: <b>${s.wrong}</b>`;
+    sfx.end(won);
+    $('overlayEnd').classList.remove('hidden');
   }
 
   function togglePause() {
     if (!state.running) return;
     state.paused = !state.paused;
     $('pauseNote').classList.toggle('hidden', !state.paused);
+    if (state.paused) { cancelDrawing(); screenEl.style.transform = ''; }
+    sfx.setPaused(state.paused);
+  }
+
+  function toggleMute() {
+    $('btnMute').textContent = sfx.toggleMute() ? '🔇' : '🔊';
   }
 
   // ---------- Input ----------
+  // Browsers only allow audio after the first click / key press
+  const unlockAudio = () => { if (!state.running) sfx.unlock(); };
+  window.addEventListener('pointerdown', unlockAudio, { once: true });
+  window.addEventListener('keydown', unlockAudio, { once: true });
+
   window.addEventListener('keydown', (e) => {
     if (e.repeat) return;
-    if (/^[0-9]$/.test(e.key)) switchCam(e.key === '0' ? 9 : Number(e.key) - 1);
+    if (e.key === 'm' || e.key === 'M') toggleMute();
+    else if (/^[0-9]$/.test(e.key)) switchCam(e.key === '0' ? 9 : Number(e.key) - 1);
     else if (e.key === 'ArrowRight' || e.key === 'd') switchCam(state.cur + 1);
     else if (e.key === 'ArrowLeft' || e.key === 'a') switchCam(state.cur - 1);
     else if (e.key === 'Escape') cancelDrawing();
-    else if (e.key === 'p' || e.key === 'P') togglePause();
+    else if (e.key === 'p' || e.key === 'P') { togglePause(); if (!state.paused) enterFullscreen(); }
   });
   window.addEventListener('blur', () => { if (state.running && !state.paused) togglePause(); });
+  const tap = (fn) => (e) => { e.currentTarget.blur(); fn(); };
+  $('arrowL').onclick = tap(() => switchCam(state.cur - 1));
+  $('arrowR').onclick = tap(() => switchCam(state.cur + 1));
+  $('btnMute').onclick = tap(toggleMute);
+  $('pauseNote').onclick = () => { if (state.paused) { togglePause(); enterFullscreen(); } };
   $('btnStart').onclick = startGame;
   $('btnRestart').onclick = startGame;
 
   // ---------- Boot ----------
   const btnStart = $('btnStart');
   btnStart.disabled = true;
-  btnStart.textContent = 'LOADING...';
   const loads = rooms.flatMap((r) => r.entries.map((e) => U.loadImage(r.cam.id, e.num)));
   Promise.all(loads).then(() => {
     prepareRooms();
@@ -376,7 +430,7 @@
     updateCamUI();
     updateClockUI();
     btnStart.disabled = false;
-    btnStart.textContent = 'START SHIFT';
+    btnStart.textContent = 'เริ่มเวร';
     requestAnimationFrame((t) => { last = t; frame(t); });
   });
 })();

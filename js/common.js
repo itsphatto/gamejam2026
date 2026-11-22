@@ -56,19 +56,6 @@ window.CCTV = (() => {
     };
   }
 
-  // Test anomaly: dark figure with red eyes, drawn on top of any image
-  function drawAlien(ctx, W, H, a) {
-    const ax = a.x * W, ay = a.y * H, ar = a.r * W;
-    ctx.fillStyle = 'rgba(5,5,5,0.92)';
-    ctx.beginPath(); ctx.ellipse(ax, ay + ar * 0.55, ar * 0.55, ar * 0.75, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(ax, ay - ar * 0.35, ar * 0.35, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ff2020';
-    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(ax - ar * 0.12, ay - ar * 0.38, ar * 0.05, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(ax + ar * 0.12, ay - ar * 0.38, ar * 0.05, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-  }
-
   // Placeholder scene for when an image file is missing
   function drawPlaceholder(ctx, W, H, camIndex, cam, entry) {
     const r = rng(camIndex * 999 + 7);
@@ -88,7 +75,6 @@ window.CCTV = (() => {
       ctx.fillStyle = `hsl(${hue}, 8%, ${14 + r() * 14}%)`;
       ctx.fillRect(x, y, w, h);
     }
-    if (entry.anomaly) drawAlien(ctx, W, H, entry.anomaly);
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '18px monospace';
     ctx.textAlign = 'center';
@@ -96,5 +82,5 @@ window.CCTV = (() => {
     ctx.textAlign = 'left';
   }
 
-  return { pad, key, loadImage, getLoaded, getEntries, defaultEntries, rng, drawPlaceholder, drawAlien };
+  return { pad, key, loadImage, getLoaded, getEntries, defaultEntries, rng, drawPlaceholder };
 })();
