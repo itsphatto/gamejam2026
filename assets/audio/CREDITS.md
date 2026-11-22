@@ -1,19 +1,25 @@
 # Audio credits
 
-All sounds are **CC0 (public domain)** from OpenGameArt.org. No attribution is required, but credit is listed here anyway.
-Files were trimmed, volume-normalised and converted to MP3.
+Almost every sound is **team-made**: raw phone recordings in `HomeMadeSoundeffect/`, processed by
+`tools/build_audio.py` (filters, pitch, reverb, layering, normalised to -1 dB peak, MP3).
+Rebuild everything with `py tools/build_audio.py`.
+
+| Game file | Source |
+|---|---|
+| sfx_static_switch.mp3 | Team recording `static_switch.mkv` (high-passed 0.35 s slice) + synth click |
+| sfx_static_loop.mp3 | Code-generated noise (no recording) |
+| sfx_confirm.mp3 | Team recording `sfx_confirm.m4a` |
+| sfx_wrong.mp3 | Team recording `sfx_wrong.m4a` + synth sine drop |
+| sfx_warning.mp3 | Team recording `sfx_warning.mkv` |
+| sfx_creepy1–5.mp3 | Team recordings `creepy1–5.mov` (+ synth rumble on 5) |
+| sfx_alien_died.mp3 | Team recording `AlienDied.mov` + synth thud |
+| sfx_jumpscare.mp3, sfx_superjumpscare.mp3 | Team recording `SuperJumpScare.mov` + synth impact / static / rising tone |
+| music_title.mp3 | Team recording `music_title.m4a` + synth drone |
+| ambience_room.mp3 | Team recording `AlienAmbient.mkv` + synth hum |
+| music_main.mp3, music_danger.mp3 | Fully code-synthesised (`music_main()` / `music_danger()` in the build script) |
+
+Still third-party (**CC0**, OpenGameArt.org, no attribution required):
 
 | Game file | Original | Author / page |
 |---|---|---|
-| music_title.mp3 | Ambient Horror Track 01 | CleytonKauffman — https://opengameart.org/content/ambient-horror-track-01 |
-| music_main.mp3 | Insistent (background loop) | yd — https://opengameart.org/content/insistent-background-loop |
-| music_danger.mp3 | Horror Loop | TinyWorlds — https://opengameart.org/content/horror-loop |
-| ambience_room.mp3 | Abandoned passages (horror ambience loop) | congusbongus — https://opengameart.org/content/abandoned-passages-horror-ambience-loop |
-| sfx_static_switch.mp3, sfx_static_loop.mp3 | Frequency Static Sound Effects (static3, static1) | bretbernhoft — https://opengameart.org/content/frequency-static-sound-effects |
-| sfx_confirm.mp3 | High pitch hitted | https://opengameart.org/content/high-pitch-hitted |
-| sfx_wrong.mp3, sfx_creepy3–5.mp3 | Horror Hit Soundpack 1 (very_bassy_4, mid_5, bassy_9, high_8) | https://opengameart.org/content/horror-hit-soundpack-1 |
-| sfx_warning.mp3 | Scary high pitched ghost | https://opengameart.org/content/scary-high-pitched-ghost |
 | sfx_gameover.mp3, sfx_win.mp3 | String and piano horror stings (piano_sting, abyss) | congusbongus — https://opengameart.org/content/string-and-piano-horror-stings |
-| sfx_creepy1.mp3, sfx_creepy2.mp3 | Horror SFX (horror_effect1, horror_effect2) | TinyWorlds — https://opengameart.org/content/horror-sfx |
-| sfx_jumpscare.mp3 | Female Scream 1 (pitched down) + very_bassy_4 + static3, mixed together | https://opengameart.org/node/147410, Horror Hit Soundpack 1, Frequency Static Sound Effects |
-| sfx_superjumpscare.mp3, sfx_alien_died.mp3 | Team-made (SuperJumpScare.mov, AlienDied.mov), converted to MP3 | Game jam team |
