@@ -12,22 +12,28 @@
   // ---------- Room data ----------
   const rooms = CAMS.map((cam, index) => ({ cam, index, entries: U.getEntries(cam.id, window.ANOMALY_DATA) }));
   const demo = !rooms.some((r) => r.entries.some((e) => e.anomaly));
-  if (demo) {
-    // No anomalies marked yet: images 11-20 become placeholder anomalies at seeded positions
+  if (demo) $('demoBadge').classList.remove('hidden');
+
+  // Called once all images have tried to load
+  function prepareRooms() {
     rooms.forEach((r) => {
-      const rand = U.rng(r.index * 131 + 3);
-      r.entries = r.entries.map((e, i) => i < r.entries.length / 2 ? e : {
-        num: e.num,
-        anomaly: { x: 0.12 + rand() * 0.76, y: 0.3 + rand() * 0.45, r: 0.035 + rand() * 0.035 },
-      });
+      const exists = (e) => !!U.getLoaded(r.cam.id, e.num);
+      // Only use normal images that actually exist; fall back to placeholder if none
+      r.normals = r.entries.filter((e) => !e.anomaly && exists(e));
+      if (!r.normals.length) r.normals = [{ num: r.entries[0].num, anomaly: null }];
+      if (demo) {
+        // No anomalies marked yet: 8 test aliens per room, drawn over the normal image
+        const rand = U.rng(r.index * 131 + 3);
+        r.anoms = Array.from({ length: 8 }, (_, i) => ({
+          num: `demo${i}`, overlay: true,
+          anomaly: { x: 0.12 + rand() * 0.76, y: 0.3 + rand() * 0.45, r: 0.035 + rand() * 0.035 },
+        }));
+      } else {
+        // Anomaly whose image file is missing -> show alien over the normal image instead
+        r.anoms = r.entries.filter((e) => e.anomaly).map((e) => exists(e) ? e : { ...e, overlay: true });
+      }
     });
-    $('demoBadge').classList.remove('hidden');
   }
-  rooms.forEach((r) => {
-    r.normals = r.entries.filter((e) => !e.anomaly);
-    r.anoms = r.entries.filter((e) => e.anomaly);
-    if (!r.normals.length) r.normals = [{ num: r.entries[0].num, anomaly: null }];
-  });
 
   // ---------- Noise frames ----------
   const noiseFrames = Array.from({ length: 6 }, () => {
@@ -76,7 +82,7 @@
   };
 
   // ---------- State ----------
-  let state;
+  let state = { running: false, paused: false, processing: false, t: 0, cur: 0, cams: [] }; // until images load
   function newState() {
     return {
       running: false, paused: false, over: false,
@@ -187,10 +193,12 @@
     if (now < state.staticUntil) { noise(1); return; }
     const room = rooms[state.cur];
     const cs = state.cams[state.cur];
-    const entry = cs.active || cs.base;
+    const overlay = cs.active && cs.active.overlay;
+    const entry = cs.active && !overlay ? cs.active : cs.base;
     const res = U.getLoaded(room.cam.id, entry.num);
     if (res) vctx.drawImage(res.img, 0, 0, W, H);
     else U.drawPlaceholder(vctx, W, H, room.index, room.cam, entry);
+    if (overlay) U.drawAlien(vctx, W, H, cs.active.anomaly);
     noise(state.processing ? 0.22 : 0.05);
     // occasional rolling glitch line
     if (Math.random() < 0.03) {
@@ -358,9 +366,17 @@
   $('btnRestart').onclick = startGame;
 
   // ---------- Boot ----------
-  state = newState();
-  updateCamUI();
-  updateClockUI();
-  rooms.forEach((r) => r.entries.forEach((e) => U.loadImage(r.cam.id, e.num)));
-  requestAnimationFrame((t) => { last = t; frame(t); });
+  const btnStart = $('btnStart');
+  btnStart.disabled = true;
+  btnStart.textContent = 'LOADING...';
+  const loads = rooms.flatMap((r) => r.entries.map((e) => U.loadImage(r.cam.id, e.num)));
+  Promise.all(loads).then(() => {
+    prepareRooms();
+    state = newState();
+    updateCamUI();
+    updateClockUI();
+    btnStart.disabled = false;
+    btnStart.textContent = 'START SHIFT';
+    requestAnimationFrame((t) => { last = t; frame(t); });
+  });
 })();
