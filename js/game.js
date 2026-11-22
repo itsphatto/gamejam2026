@@ -86,16 +86,21 @@
     updateCamUI();
   }
 
+  const calm = matchMedia('(prefers-reduced-motion: reduce)');
+  // blur-morph an element whose text just changed
+  const morph = (el) => calm.matches || el.animate([{ opacity: 0.2, filter: 'blur(6px)' }, {}], { duration: 220, easing: 'ease-out' });
+
   function updateCamUI() {
     const cam = CAMS[state.cur];
     $('osdCam').textContent = `${cam.label} ${cam.name}`;
+    morph($('osdCam'));
     camDots.forEach((d, i) => d.classList.toggle('on', i === state.cur));
   }
 
   let toastTimer = 0;
   function toast(text, kind = 'info', ms = 1800) {
     const el = $('toast');
-    el.textContent = text; el.className = kind;
+    el.textContent = text; el.className = `morph ${kind}`; morph(el);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.add('hidden'), ms);
   }
@@ -393,7 +398,7 @@
   }
 
   function toggleMute() {
-    $('btnMute').textContent = sfx.toggleMute() ? '🔇' : '🔊';
+    $('btnMute').classList.toggle('muted', sfx.toggleMute());
   }
 
   // ---------- Input ----------

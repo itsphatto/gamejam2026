@@ -20,30 +20,34 @@
         <div class="osd-bl" id="osdTime">--</div>
         <div class="osd-br" id="camDots"></div>
       </div>
-      <div id="processing" class="hidden">
+      <div id="processing" class="morph hidden">
         <div class="proc-text">กำลังส่งรายงาน<span class="dots"></span></div>
       </div>
-      <div id="toast" class="hidden"></div>
+      <div id="toast" class="morph hidden"></div>
       <div id="jumpscare" class="hidden"><img id="jumpImg" alt="" /></div>
     </div>
 
-    <button id="arrowL" class="arrow" title="กล้องก่อนหน้า (←)" aria-label="กล้องก่อนหน้า">
+    <button id="arrowL" class="arrow" aria-label="กล้องก่อนหน้า">
       <svg viewBox="0 0 40 100"><polyline points="34,4 6,50 34,96" /></svg>
     </button>
-    <button id="arrowR" class="arrow" title="กล้องถัดไป (→)" aria-label="กล้องถัดไป">
+    <button id="arrowR" class="arrow" aria-label="กล้องถัดไป">
       <svg viewBox="0 0 40 100"><polyline points="6,4 34,50 6,96" /></svg>
     </button>
-    <button id="btnMute" title="เปิด/ปิดเสียง (M)">🔊</button>
-    <button id="btnOverview" title="ดูกล้องทั้งหมด (Tab)">▦</button>
+    <button id="btnMute" class="icon-btn" aria-label="เปิด/ปิดเสียง">
+      <svg viewBox="0 0 24 24"><path class="ico-fill" d="M4 9h4l5-4v14l-5-4H4z" /><path class="ico-waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" /><path class="ico-x" d="M16 9.5l5 5M21 9.5l-5 5" /></svg>
+    </button>
+    <button id="btnOverview" class="icon-btn" aria-label="ดูกล้องทั้งหมด">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></svg>
+    </button>
 
-    <div id="camOverview" class="hidden">
+    <div id="camOverview" class="morph hidden">
       <div class="overview-box">
         <div class="overview-title">เลือกกล้อง · กด <b>Tab</b> เพื่อปิด</div>
         <div id="camGrid"></div>
       </div>
     </div>
 
-    <div id="pauseNote" class="overlay hidden">
+    <div id="pauseNote" class="overlay morph hidden">
       <div class="card small">
         <h2>หยุดชั่วคราว</h2>
         <p>คลิกที่นี่หรือกด <b>P</b> เพื่อกลับเข้าเวร (เต็มจอ)</p>
@@ -53,7 +57,7 @@
   </div>
 
   <!-- Intro -->
-  <div id="overlayStart" class="overlay">
+  <div id="overlayStart" class="overlay morph">
     <div class="intro">
       <h1>กะดึก</h1>
       <p class="sub">22/11/2026 · ยามรักษาความปลอดภัย · เวรกลางคืน</p>
@@ -72,12 +76,12 @@
         <li>ถ้าภาพสั่นแรงขึ้น … <b>มันกำลังมาหาคุณ</b></li>
       </ol>
       <button id="btnStart" class="btn">กำลังโหลด…</button>
-      <p class="hint">🎧 แนะนำให้ใส่หูฟัง · เกมจะเข้าสู่โหมดเต็มจอ · <b>P</b> หยุดชั่วคราว · <b>M</b> ปิดเสียง · <b>Esc</b> ยกเลิกการวาด</p>
+      <p class="hint"><svg class="hint-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></svg> แนะนำให้ใส่หูฟัง · เกมจะเข้าสู่โหมดเต็มจอ · <b>P</b> หยุดชั่วคราว · <b>M</b> ปิดเสียง · <b>Esc</b> ยกเลิกการวาด</p>
     </div>
   </div>
 
   <!-- End -->
-  <div id="overlayEnd" class="overlay hidden">
+  <div id="overlayEnd" class="overlay morph hidden">
     <div class="intro end">
       <h1 id="endTitle">จบเวร</h1>
       <p id="endText" class="sub"></p>
