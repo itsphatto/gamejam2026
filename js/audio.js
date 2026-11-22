@@ -1,4 +1,4 @@
-// Music + sound effects (real CC0 audio files, see assets/audio/CREDITS.md).
+// Music + sound effects (team-made / code-generated audio, see assets/audio/CREDITS.md).
 // Uses <audio> elements so it also works when index.html is opened directly from disk.
 window.GameAudio = (() => {
   const BASE = 'assets/audio/';

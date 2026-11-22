@@ -46,7 +46,7 @@ All timings and limits are in `js/config.js`.
 - `js/common.js` — shared image loading and placeholder drawing
 
 ## Audio
-Real CC0 sounds from OpenGameArt.org, stored in `assets/audio/` (sources in `assets/audio/CREDITS.md`). Playback code is in `js/audio.js`.
+All sounds are team-made: phone recordings in `HomeMadeSoundeffect/` plus code synthesis, built into `assets/audio/` by `py tools/build_audio.py` (details in `assets/audio/CREDITS.md`). Playback code is in `js/audio.js`.
 - Title music, then main shift music with room ambience
 - Danger music fades in when 3 anomalies are unreported at once
 - Static on camera switch and while a report is sending

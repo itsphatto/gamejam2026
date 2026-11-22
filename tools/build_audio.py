@@ -375,15 +375,6 @@ def scream_layers(big):
     return pad(norm(low)) * 0.8 + pad(norm(mid)) * 0.6 + pad(norm(whisper)) * 0.35
 
 
-def sfx_jumpscare():
-    voice = scream_layers(False)
-    y = place(silence(1.8), norm(voice)[:secs(1.6)], 0.0)
-    y = place(y, norm(impact(0.9, 110, 30)) * 0.9, 0.0)
-    y = place(y, fades(band(noise(0.45), 800), 0, 0.3) * 0.25, 0.0)  # static burst
-    y = reverb(drive(y, 2.0), 0.8, 0.2)[:secs(1.9)]
-    save('sfx_jumpscare', fades(y, 0.002, 0.25))
-
-
 def sfx_superjumpscare():
     lead = 0.1
     voice = scream_layers(True)
@@ -503,10 +494,73 @@ def music_danger():
     save('music_danger', y + high + drone, -2)  # louder bass drone underneath
 
 
+def piano(freq, dur, vel=1.0):
+    """Simple additive piano: slightly stretched partials, higher ones die faster, soft hammer thump."""
+    t = t_axis(dur)
+    base_decay = 2.2 * (220 / freq) ** 0.35          # low notes ring longer
+    s = np.zeros(len(t))
+    for k in range(1, 9):
+        fk = freq * k * (1 + 0.0004 * k * k)         # piano string inharmonicity
+        if fk > 12000: break
+        s += (0.9 ** k / k ** 0.6) * sine(fk, dur) * np.exp(-t * k ** 0.7 / base_decay)
+    s *= np.minimum(1, t / 0.004) * np.clip((dur - t) / min(1.5, dur / 3), 0, 1)  # attack + release (no hard cut)
+    hammer = band(noise(dur), 80, 1500) * np.exp(-t / 0.015) * 0.15
+    return (s + hammer) * vel
+
+
+def hum_pad(freqs, dur, attack=1.5, release=2.5):
+    """Warm 'hummed' pad: soft detuned saw chord, low-passed, with gentle vibrato."""
+    t = t_axis(dur)
+    vib = 1 + 0.004 * np.sin(2 * np.pi * 4.8 * t)
+    out = np.zeros(len(t))
+    for f in freqs:
+        for d in (0.997, 1.003):
+            ph = np.cumsum(f * d * vib) / SR
+            out += 2 * (ph % 1) - 1
+    out = band(out, 60, 1400)
+    env = np.minimum(1, t / attack) * np.clip((dur - t) / release, 0, 1)
+    return out * env
+
+
+def sfx_gameover():
+    """Dark ending sting: reversed low note swells into a heavy low piano chord, deep drone, ~17 s decay."""
+    total = 17.0
+    y = silence(total)
+    first = 1.2                                       # time of the first hit
+    chord = [NOTE(33), NOTE(40), NOTE(45), NOTE(48)]  # A1 E2 A2 C3 (A minor, low)
+    swell = sum(piano(f, first, 0.8) for f in chord)[::-1]          # reversed note into the hit
+    swell *= np.linspace(0, 1, len(swell)) ** 2
+    y = place(y, swell * 0.7, 0.0)
+    y = place(y, sum(piano(f, 9.0, 1.0) for f in chord), first)
+    y = place(y, piano(NOTE(44), 7.0, 0.55) + piano(NOTE(39), 7.0, 0.5), first + 2.6)   # G#2 + D#2: unresolved
+    y = place(y, piano(NOTE(21), 8.0, 0.9), first + 5.4)                                  # A0 rumble
+    y = place(y, piano(NOTE(57), 6.0, 0.25), first + 5.4)                                 # lone A3
+    t = t_axis(total)
+    drone = (sine(NOTE(21) * 2, total) + 0.8 * sine(NOTE(21) * 2 * 1.006, total) + 0.4 * band(pink(total), 25, 150) * 4)
+    drone *= np.clip((t - first) / 1.0, 0, 1) * np.clip((total - t) / 8.0, 0, 1)
+    y = reverb(y, 6.0, 0.5, bright=3500)[:secs(total)]
+    y = norm(y) + norm(drone) * 0.22
+    save('sfx_gameover', fades(y, 0.01, 4.0))
+
+
+def sfx_win():
+    """Gentle relief: soft major arpeggio over a warm hummed pad, then an upward chime. ~7.5 s."""
+    total = 7.5
+    y = silence(total)
+    y = place(y, hum_pad([NOTE(48), NOTE(55), NOTE(64)], 7.0, 1.2, 3.0) * 0.12, 0.0)    # C3 G3 E4
+    for i, n in enumerate([72, 76, 79, 84]):                                               # C5 E5 G5 C6
+        y = place(y, piano(NOTE(n), 5.0, 0.55), 0.3 + i * 0.42)
+    y = place(y, piano(NOTE(60), 6.0, 0.4) + piano(NOTE(67), 6.0, 0.3), 0.3)             # soft low support
+    for i, n in enumerate([88, 91, 96]):                                                   # E6 G6 C7 upward chime
+        y = place(y, synth_note(NOTE(n), 3.0, 'bell') * 0.16, 2.6 + i * 0.12)
+    y = reverb(y, 4.0, 0.45, bright=8000)[:secs(total)]
+    save('sfx_win', fades(y, 0.01, 2.0))
+
+
 ALL = [sfx_static_switch, sfx_static_loop, sfx_confirm, sfx_wrong, sfx_warning,
        sfx_creepy1, sfx_creepy2, sfx_creepy3, sfx_creepy4, sfx_creepy5,
-       sfx_alien_died, sfx_jumpscare, sfx_superjumpscare, music_title, ambience_room,
-       music_main, music_danger]
+       sfx_alien_died, sfx_superjumpscare, music_title, ambience_room,
+       music_main, music_danger, sfx_gameover, sfx_win]
 
 if __name__ == '__main__':
     want = set(sys.argv[1:])
